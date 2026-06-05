@@ -212,69 +212,11 @@ Think of it like a human reviewing their journal and updating their mental model
 
 The goal: Be helpful without being annoying. Check in a few times a day, do useful background work, but respect quiet time.
 
-## 🧠 Plan Mode – Deliberate Task Breakdown
+## 🧠 Plan Mode – Skill
 
-### Activation
-Plan Mode is **activated only when the user explicitly says** something like:  
-“Enable plan mode”, “Plan mode”, “Let’s go into plan mode”, or similar clear declaration.
+Plan Mode rules have been extracted to the global skill `plan-mode` (`~/.openclaw/skills/plan-mode/`).
 
-### Mode Behavior
-
-Once activated, you must:
-
-1. **Generate a list of 2–4 possible approaches** to achieve the user’s goal.  
-   - For each option, clearly state:
-     - ✅ **Advantages** (pros)
-     - ❌ **Disadvantages** (cons)
-   - **Every list MUST include option D: “Other”** (a custom option where the user can request a fresh set of alternatives).
-
-2. **Ask the user to choose** one of the options (A, B, C, D).  
-   - If the user picks A, B, or C, that becomes the chosen plan.
-   - If the user picks **D: Other**, you must generate a **new list** (again 2–4 options, each with pros/cons, and again including D: Other).  
-     - The new list **must not repeat** any option from previous lists in the same session.
-
-3. **If the user’s selection is NOT in {A, B, C, D}** (e.g., typing “E”, “first one”, “do it”), reply with:  
-   > *“请从以上选项中选择，或选择‘D:其他’来获取更多类型。”*  
-   (English equivalent: “Please select from the options above, or choose ‘D: Other’ for more alternatives.”)
-
-4. **Continue Plan Mode until the final goal is reached.**  
-   - The mode does **not** stop until the user’s original task is fully completed (as judged by you or confirmed by the user).
-
-#### Handling “D: Other” and repetition limit
-
-- Maintain a counter: `other_choice_count` for the current plan mode session. Start at 0.
-- Each time the user selects **D: Other**:
-  - If `other_choice_count` < 3:
-    - Increment the counter.
-    - Generate a new list (2–4 options, with pros/cons, including D: Other again). Do not repeat any previously shown option.
-  - Else (i.e., `other_choice_count` >= 3, meaning the user has chosen “Other” three or more times):
-    - Do **not** generate a new list.
-    - Instead, ask the user exactly:
-      > “请用一句话描述您要完成的目标，我将直接给出对应方案。”
-    - After the user replies with a single‑sentence description of their goal, provide a **direct, concrete plan** (no A/B/C/D choices). Then proceed to execution after user permission as normal.
-- Reset `other_choice_count` to 0 when Plan Mode ends or when the user says “reset plan mode”.
-
-### Plan Structuring and Execution
-
-- **Break the chosen plan into chapters and subsections** (e.g., “Chapter 1: Gather data”, “1.1 List files”, “1.2 Check permissions”).  
-- After completing **each chapter**, you must:
-  - State: “接下来需要完成的章节：” (Next chapter to complete)
-  - State: “下一章节：” (Next chapter name)
-  - List the subsections of that next chapter: “下一章节包含的小节：” (Subsections of the next chapter)
-  - Then **ask for permission** to continue, or automatically continue if no objection (per original instruction: “再继续执行计划”).
-
-### Final Execution Permission
-
-- **Only after the entire plan is fully mapped out** (all chapters/subsections defined) and **the user gives explicit permission** (e.g., “Execute”, “Go ahead”, “Start”) may you begin executing the plan.
-- If the user has not given permission, you must wait and not take any action.
-
-### Plan Termination
-
-Plan Mode ends **only when**:
-- The task goal is achieved, **or**
-- The user explicitly says “Exit plan mode” or “Stop planning”.
-
-After the goal is reached, you should summarize the outcome and optionally ask if any follow-up is needed.
+When the user says "enable plan mode" / "plan mode" — follow the `plan-mode` skill.
 
 ## Make It Yours
 
