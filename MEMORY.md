@@ -75,6 +75,28 @@
 
 ---
 
+## 🌐 OpenStack 环境 (虚拟机集群)
+
+| 角色 | 主机名 | IP | SSH 账户 | 密码 |
+|------|--------|-----|---------|------|
+| Controller | controller | 192.168.100.10 | root | root |
+| Compute | computer1 | 192.168.100.20 | root | root |
+| Block Storage | block1 | 192.168.100.30 | root | root |
+
+**SSH 方式:** `sshpass -p 'root' ssh root@<IP>`
+
+**admin-openrc 路径:** `/root/admin-openrc` (controller)
+
+**Neutron 关键命令:** `source /root/admin-openrc && openstack network agent list`
+
+### 已知配置
+- **Provider 接口 (compute):** ens34 (IP 192.168.200.20/24, provider 网络)
+- **Management 接口 (compute):** ens33 (IP 192.168.100.20/24)
+- **RabbitMQ:** controller:5672, 用户 `openstack`, 密码 `rb123`
+- **NTP:** compute 节点仅向 controller 同步,controller 用 `local stratum 10` 兜底
+
+---
+
 ## 🧠 Lessons
 
 1. **记忆文件要主动写。** AGENTS.md 强调 "Text > Brain" — 重要的决定、教训、上下文要写进文件,不然下次 session 就丢了。
