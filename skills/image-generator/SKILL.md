@@ -85,11 +85,17 @@ When user **does specify** any of these — use exactly what they said.
 
 1. **Parse request** — extract explicit user specs (size, style, n) if any; otherwise infer from context above.
 
-2. **Build prompt** — concise description that embeds size, style, and content in natural language.
+2. **Build prompt** — **始终用英文写 prompt**。如果图片可能含文字，在 prompt 末尾用英文指定需要的中文文字内容：
 
    ```
-   (size hint) (style hint). Content description. (usage hint).
+   # 无文字 -> 纯英文
+   A 1920x1080 photorealistic landscape of mountain lake at sunset, warm golden hour light.
+
+   # 含文字 -> 英文描述 + Chinese text 指令
+   A poster design, blue and white color scheme. Include Chinese text: "别让最后一滴水成为眼泪" as the main headline, and "节约用水" as subtitle.
    ```
+
+   规则：尺寸/风格/数量的自然语言描述也保留在 prompt 中。
 
 3. **Select model & Call API** — 根据 Model Selection 规则判断：
 

@@ -21,7 +21,7 @@ call_api() {
     -d "$(jq -n --arg prompt "$prompt" --arg model "$model" '{
       model: $model,
       messages: [
-        {role: "system", content: "You are an AI that generates images. Respond with ONLY a markdown image link: ![image](url). No other text."},
+        {role: "system", content: "You are an AI that generates images. User describes in English. When Chinese characters are requested, render them accurately. Respond with ONLY a markdown image link: ![image](url). No other text."},
         {role: "user", content: $prompt}
       ],
       stream: false
