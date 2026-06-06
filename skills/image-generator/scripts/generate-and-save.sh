@@ -1,71 +1,87 @@
 #!/usr/bin/env bash
-# generate-and-save.sh — 生成图片 → 下载到本地 → 注册到画廊
-# Usage: generate-and-save.sh <prompt> [model]
-#   model (optional): "gpt-image-2" (default) or "nano-banana-pro"
-# Outputs: local URL of saved image
+# generate-and-save.sh — 生成 n 张图片 → 下载到本地 → 注册到画廊
+# Usage: generate-and-save.sh <prompt> [model] [n]
+#   prompt (必填): 图片描述
+#   model  (可选): "gpt-image-2" (默认) 或 "nano-banana-pro"
+#   n      (可选): 生成数量 (默认 1)
+# Outputs: 每行一个本地 URL
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+source "$SCRIPT_DIR/api.sh"
+
 PROMPT="$1"
 MODEL="${2:-gpt-image-2}"
-API_KEY=***
-API_URL="https://grsai.dakka.com.cn/v1/chat/completions"
+COUNT="${3:-1}"
+
 GALLERY_DIR="/usr/share/nginx/html/gallery"
 IMAGES_DIR="$GALLERY_DIR/images"
 LIST_JSON="$GALLERY_DIR/list.json"
 
-# 1. Call API
-RESPONSE=$(curl -s "$API_URL" \
-  -H "Authorization: Bearer $API_KEY" \
-  -H "Content-Type: application/json" \
-  -d "$(jq -n --arg prompt "$PROMPT" --arg model "$MODEL" '{
-    model: $model,
-    messages: [
-      {role: "system", content: "You are an AI that generates images. Respond with ONLY a markdown image link: ![image](url). No other text."},
-      {role: "user", content: $prompt}
-    ],
-    stream: false
-  }')")
+# 确保目录存在
+mkdir -p "$IMAGES_DIR"
 
-# Check for error
-if echo "$RESPONSE" | jq -e '.error' > /dev/null 2>&1; then
-  echo "ERROR: $(echo "$RESPONSE" | jq -r '.error.message')" >&2
+download_and_register() {
+  local img_url="$1"
+
+  local timestamp
+  timestamp=$(date +%Y%m%d_%H%M%S)
+  local suffix
+  suffix=$(tr -dc 'a-f0-9' < /dev/urandom | head -c 8)
+  local filename="${timestamp}_${suffix}.png"
+  local local_path="$IMAGES_DIR/$filename"
+
+  # 下载
+  curl -s --max-time 60 -o "$local_path" "$img_url"
+  local size
+  size=$(stat -c%s "$local_path" 2>/dev/null || echo "0")
+
+  if [ "$size" -lt 100 ]; then
+    rm -f "$local_path"
+    echo "▸ 下载文件太小 ($size bytes)，已丢弃" >&2
+    return 1
+  fi
+
+  # 注册到索引
+  local current_time
+  current_time=$(date '+%Y-%m-%d %H:%M:%S')
+  if [ -f "$LIST_JSON" ]; then
+    local list
+    list=$(cat "$LIST_JSON")
+  else
+    list="[]"
+  fi
+  echo "$list" | jq --arg name "$filename" --arg time "$current_time" \
+    --arg model "$MODEL" --arg prompt "${PROMPT:0:60}" \
+    '. + [{"name": $name, "time": $time, "model": $model, "prompt": $prompt}]' > "$LIST_JSON"
+
+  local local_url="http://localhost:8080/gallery/images/$filename"
+  echo "$local_url"
+}
+
+echo "▸ 模型: $MODEL" >&2
+echo "▸ 数量: $COUNT" >&2
+
+SUCCESS_COUNT=0
+for i in $(seq 1 "$COUNT"); do
+  [ "$COUNT" -gt 1 ] && echo "▸ [$i/$COUNT] 生成中..." >&2
+
+  URL=$(call_api "$PROMPT" "$MODEL")
+  if [ -z "$URL" ]; then
+    echo "▸ [$i/$COUNT] 生成失败，跳过" >&2
+    continue
+  fi
+
+  LOCAL_URL=$(download_and_register "$URL")
+  if [ -n "$LOCAL_URL" ]; then
+    echo "$LOCAL_URL"
+    SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+  fi
+done
+
+echo "▸ 完成: $SUCCESS_COUNT/$COUNT 张" >&2
+
+if [ "$SUCCESS_COUNT" -eq 0 ]; then
   exit 1
 fi
-
-# 2. Extract last image URL (handles progress output from gpt-image-2)
-IMG_URL=$(echo "$RESPONSE" | jq -r '.choices[0].message.content // ""' | grep -oP 'https?://[^) ]+' | tail -1)
-
-if [ -z "$IMG_URL" ]; then
-  echo "ERROR: no image URL found" >&2
-  exit 1
-fi
-
-# 3. Generate filename
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-SUFFIX=$(tr -dc 'a-f0-9' < /dev/urandom | head -c 8)
-FILENAME="${TIMESTAMP}_${SUFFIX}.png"
-LOCAL_PATH="$IMAGES_DIR/$FILENAME"
-
-# 4. Download
-curl -s -o "$LOCAL_PATH" "$IMG_URL"
-LOCAL_SIZE=$(stat -c%s "$LOCAL_PATH" 2>/dev/null || echo "0")
-
-if [ "$LOCAL_SIZE" -lt 100 ]; then
-  rm -f "$LOCAL_PATH"
-  echo "ERROR: downloaded file too small ($LOCAL_SIZE bytes)" >&2
-  exit 1
-fi
-
-# 5. Update gallery index
-CURRENT_TIME=$(date '+%Y-%m-%d %H:%M:%S')
-if [ -f "$LIST_JSON" ]; then
-  LIST=$(cat "$LIST_JSON")
-else
-  LIST="[]"
-fi
-echo "$LIST" | jq --arg name "$FILENAME" --arg time "$CURRENT_TIME" \
-  --arg model "$MODEL" '. + [{"name": $name, "time": $time, "model": $model}] | .[-5:]' > "$LIST_JSON"
-
-# 6. Output local URL
-echo "http://localhost:8080/gallery/images/$FILENAME"
