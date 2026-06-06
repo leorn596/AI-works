@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI 图片生成 · Gallery</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Segoe UI', sans-serif;
+    background: #0f0f0f;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+  header {
+    padding: 24px 32px;
+    border-bottom: 1px solid #2a2a2a;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  header h1 { font-size: 20px; font-weight: 600; }
+  header .badge {
+    font-size: 12px;
+    background: #1a6b3c;
+    color: #4ade80;
+    padding: 2px 10px;
+    border-radius: 999px;
+  }
+  header .count {
+    font-size: 13px;
+    color: #666;
+    margin-left: auto;
+  }
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 16px;
+    padding: 24px 32px;
+  }
+  .card {
+    background: #1a1a1a;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid #2a2a2a;
+    transition: border-color 0.2s;
+  }
+  .card:hover { border-color: #4ade80; }
+  .card img {
+    width: 100%;
+    display: block;
+    cursor: pointer;
+  }
+  .card .info {
+    padding: 12px 16px;
+    font-size: 13px;
+    color: #999;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .card .info .row1 {
+    display: flex;
+    justify-content: space-between;
+  }
+  .card .info .row2 {
+    font-size: 12px;
+    color: #555;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .card .info .model-tag {
+    font-size: 11px;
+    background: #2a2a2a;
+    padding: 1px 8px;
+    border-radius: 4px;
+    color: #888;
+  }
+  .empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 80px 32px;
+    color: #555;
+  }
+  .empty .big { font-size: 48px; margin-bottom: 16px; }
+  .modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.9);
+    z-index: 100;
+    justify-content: center;
+    align-items: center;
+    cursor: zoom-out;
+  }
+  .modal.active { display: flex; }
+  .modal img {
+    max-width: 90vw;
+    max-height: 90vh;
+    border-radius: 8px;
+  }
+  .error-msg {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 40px;
+    color: #f87171;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>🖼️ AI Gallery</h1>
+  <span class="badge">nano-banana-pro</span>
+  <span class="count" id="count">0 张</span>
+</header>
+<div class="gallery" id="gallery">
+  <div class="empty">
+    <div class="big">🖼️</div>
+    还没有图片 — 让 agent 生成一张试试
+  </div>
+</div>
+<div class="modal" id="modal" onclick="this.classList.remove('active')">
+  <img id="modal-img" src="" alt="preview">
+</div>
+<script>
+async function loadGallery() {
+  const container = document.getElementById('gallery');
+  const countEl = document.getElementById('count');
+  try {
+    const res = await fetch('/gallery/list.json?' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const files = await res.json();
+    countEl.textContent = files.length + ' 张';
+    if (!files.length) {
+      container.innerHTML = '<div class="empty"><div class="big">🖼️</div>还没有图片 — 让 agent 生成一张试试</div>';
+      return;
+    }
+    // 最新在前
+    files.reverse();
+    container.innerHTML = files.map(f => {
+      const model = f.model || '';
+      const prompt = f.prompt || '';
+      const time = f.time || '';
+      return `<div class="card">
+        <img src="/gallery/images/${encodeURIComponent(f.name)}" alt="${f.name}" loading="lazy" onclick="preview(this.src)">
+        <div class="info">
+          <div class="row1">
+            <span class="model-tag">${model}</span>
+            <span>${time}</span>
+          </div>
+          <div class="row2">${escapeHtml(prompt)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div class="error-msg">❌ 加载画廊失败: ' + e.message + '</div>';
+  }
+}
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+function preview(src) {
+  document.getElementById('modal-img').src = src;
+  document.getElementById('modal').classList.add('active');
+}
+loadGallery();
+// 有新图片时自动刷新
+setInterval(loadGallery, 5000);
+</script>
+</body>
+</html>

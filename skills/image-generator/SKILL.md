@@ -131,8 +131,29 @@ When user **does specify** any of these — use exactly what they said.
 
 For n > 1, call API multiple times with the same prompt (model handles diversity), or adjust prompt with "第一张: ..., 第二张: ..." for variety.
 
+## Script Reference
+
+```
+scripts/api.sh                # 公共层：curl + 解析 + 中文错误提示
+scripts/generate.sh           # prompt → URL
+scripts/generate-and-save.sh  # 生成 + 下载 + 注册画廊，支持多张
+```
+
+### generate-and-save.sh
+
+```bash
+# 1 张纯图
+~/.openclaw/skills/image-generator/scripts/generate-and-save.sh "山间湖泊" "gpt-image-2"
+
+# 1 张含文字图
+~/.openclaw/skills/image-generator/scripts/generate-and-save.sh "香港招牌" "nano-banana-pro"
+
+# 3 张批量生成
+~/.openclaw/skills/image-generator/scripts/generate-and-save.sh "橘猫" "gpt-image-2" 3
+```
+
 ## Error Handling
 
-- `$IMAGE_GEN_API_KEY` not set → tell user to set env var (see Setup above)
-- API error → retry with `nano-banana-pro`; if still fails, report to user
-- Empty/no image URL → retry with more specific prompt
+- `IMAGE_GEN_API_KEY not set` → 启动报错，指引用户设环境变量
+- API 错误 → 中文提示（余额不足 / 认证失败 / 限流 / 超时），不需要 agent 二次翻译
+- 图片为空 → 更详细的 prompt 重试
