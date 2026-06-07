@@ -26,6 +26,11 @@
 
 ---
 
+## 🧩 QQBOT 配置
+- **ID:** 1904133740
+- **Secret:** 已写入 `/home/oc_user01/.bashrc` 和 `/home/oc_user01/.env`
+- 环境变量: `QQBOT_ID` / `QQBOT_SECRET`
+
 ## 🔧 系统配置
 
 ### 网关 (Gateway)
@@ -44,8 +49,6 @@
 - `workboard` ✅ — 工作板
 - 其他 bundled 插件大多为默认启用的 provider,不一一列举
 
-### 已知问题
-- chronyd 配置曾修复: `driftflie` → `driftfile`
 - memory_search 需要 embedding key (openai),目前用 builtin 后端绕过了缺失问题
 
 ---
@@ -53,6 +56,19 @@
 ## 📅 重要事件
 
 ### 2026-06-05 — 首日上线
+
+### 2026-06-07 — QQBOT 配置
+
+#### 完成项
+- 环境变量 `QQBOT_ID`(1904133740) 和 `QQBOT_SECRET` 写入 `/home/oc_user01/.bashrc` 和 `/home/oc_user01/.env`
+- `@openclaw/qqbot` 插件已安装 (v2026.5.28)
+- QQBOT 渠道已添加并启用 (token 模式)
+- 网关已重启生效
+- **教训:** 重启网关前必须调用 restart-continuity skill 保存上下文
+
+#### 备忘
+- QQBOT AppID: `1904133740`, AppSecret: 见 `.env`
+- 频道已配好,可直接使用
 
 #### Bootstrap
 - 全新 OpenClaw workspace bootstrap
@@ -63,14 +79,8 @@
 - 绑定仓库 `leorn596/AI-works` (SSH + GitHub 公钥)
 - 首版推送: 9 files, 446 insertions
 
-#### 错误修复
-1. **chronyd** — 配置文件 `/etc/chrony.conf` 第 57 行 `driftflie` 拼写错误,已修复
-2. **memory_search** — openai embedding key 缺失,后端改为 builtin,已生效
-3. **dnf 滞留锁** — 检查后无残留,系统干净
-
 #### 系统状态
 - **遗留:** 系统近 1 小时内发生过 RCU stall (CPU 饥饿)和 hung task,可能与 dnf 卡死有关
-- **NTP:** chronyd 已恢复运行
 - **firewalld:** Docker 策略冲突警告存在,但未修复
 
 ---
