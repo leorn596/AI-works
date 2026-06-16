@@ -201,3 +201,13 @@ openclaw gateway restart
 - **工作用户:** oc_user01
 - **agent 身份:** robot01（工作区 /root/.openclaw/workspace/robot01）
 - **密码:** 存在 User 文件
+
+### Dual Agent Flow 模型配置
+
+| 角色 | 模型 | API | 端点 |
+|------|------|-----|------|
+| PlanMode | deepseek-v4-pro | 默认 | 默认 |
+| WorkAgent | gemini-3.1-flash-lite | IMAGE_GEN_API_KEY | grsai.dakka.com.cn |
+| MiddleAgent | gpt-5.4 | IMAGE_GEN_API_KEY | grsai.dakka.com.cn |
+| AcceptAgent | deepseek-v4-pro | 默认 | 默认 |
+- IMAGE_GEN_API_KEY 已存在于环境变量中

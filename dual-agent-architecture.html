@@ -1,0 +1,209 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PlanMode + DualAgentFlow 架构</title>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #f8fafc;
+    --fg: #172033;
+    --muted: #5b6475;
+    --line: #64748b;
+    --neutral: #e2e8f0;
+    --input: #bfdbfe;
+    --process: #c7d2fe;
+    --storage: #99f6e4;
+    --external: #fde68a;
+    --risk: #fecaca;
+    --zone-bg: #f1f5f9;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f172a;
+      --fg: #e5e7eb;
+      --muted: #94a3b8;
+      --line: #64748b;
+      --neutral: #334155;
+      --input: #1e3a5f;
+      --process: #3730a3;
+      --storage: #115e59;
+      --external: #78350f;
+      --risk: #7f1d1d;
+      --zone-bg: #1e293b;
+    }
+  }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 14px/1.4 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main {
+    max-width: 1020px;
+    margin: 32px auto;
+    padding: 0 20px;
+  }
+  svg {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .title { font-size: 18px; font-weight: 650; fill: var(--fg); }
+  .subtitle { font-size: 13px; fill: var(--muted); }
+  .label { font-size: 13px; font-weight: 600; fill: var(--fg); }
+  .small { font-size: 11px; fill: var(--muted); }
+  .zone-label { font-size: 14px; font-weight: 650; fill: var(--muted); }
+  .node { stroke: var(--line); stroke-width: 1.2; rx: 8; }
+  .neutral-fill { fill: var(--neutral); }
+  .input-fill { fill: var(--input); }
+  .process-fill { fill: var(--process); }
+  .storage-fill { fill: var(--storage); }
+  .external-fill { fill: var(--external); }
+  .edge { stroke: var(--line); stroke-width: 1.5; fill: none; }
+  .edge-dashed { stroke: var(--line); stroke-width: 1.5; fill: none; stroke-dasharray: 6 4; }
+  .zone { fill: none; stroke: var(--line); stroke-width: 1; rx: 10; opacity: 0.5; }
+  .zone-fill { fill: var(--zone-bg); opacity: 0.4; rx: 10; }
+  .arrow { fill: var(--line); }
+  .msg-label { font-size: 11px; fill: var(--muted); }
+</style>
+<main>
+<svg viewBox="0 0 980 700" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path class="arrow" d="M0,0 L10,5 L0,10 Z"/>
+    </marker>
+    <marker id="arrow-dashed" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path class="arrow" d="M0,0 L10,5 L0,10 Z"/>
+    </marker>
+  </defs>
+
+  <!-- ============ ZONE 1: 规划阶段 ============ -->
+  <rect class="zone zone-fill" x="30" y="20" width="920" height="130"/>
+  <rect class="zone" x="30" y="20" width="920" height="130"/>
+  <text x="45" y="48" class="zone-label">Phase 1 规划阶段</text>
+
+  <!-- 用户 -->
+  <rect class="node external-fill" x="80" y="70" width="110" height="44"/>
+  <text x="135" y="97" text-anchor="middle" class="label">👤 用户</text>
+
+  <!-- Plan Mode -->
+  <rect class="node input-fill" x="330" y="65" width="170" height="54"/>
+  <text x="415" y="88" text-anchor="middle" class="label">📋 Plan Mode</text>
+  <text x="415" y="105" text-anchor="middle" class="small">选项生成 + 章节分解</text>
+
+  <!-- plan.md -->
+  <rect class="node storage-fill" x="640" y="70" width="170" height="44"/>
+  <text x="725" y="97" text-anchor="middle" class="label">📄 plan-{ts}/</text>
+
+  <!-- 箭头 Zone 1 -->
+  <path class="edge" marker-end="url(#arrow)" d="M190,92 L320,92"/>
+  <text x="255" y="85" text-anchor="middle" class="msg-label">触发</text>
+
+  <path class="edge" marker-end="url(#arrow)" d="M500,92 L630,92"/>
+  <text x="565" y="85" text-anchor="middle" class="msg-label">输出计划</text>
+
+  <!-- plan.md 向下箭头 -->
+  <path class="edge" marker-end="url(#arrow)" d="M725,114 L725,175"/>
+
+  <!-- ============ ZONE 2: 执行阶段 ============ -->
+  <rect class="zone zone-fill" x="30" y="165" width="920" height="340"/>
+  <rect class="zone" x="30" y="165" width="920" height="340"/>
+  <text x="45" y="193" class="zone-label">Phase 2 执行阶段</text>
+
+  <!-- WorkAgent -->
+  <rect class="node process-fill" x="60" y="240" width="230" height="110"/>
+  <text x="175" y="268" text-anchor="middle" class="label">🔧 WorkAgent 生产者</text>
+  <text x="175" y="290" text-anchor="middle" class="small">按章节生成产出</text>
+  <text x="175" y="308" text-anchor="middle" class="small">分支修复 / 依赖等待</text>
+  <text x="175" y="326" text-anchor="middle" class="small">进度领先 ≤ 4 节</text>
+
+  <!-- MiddleAgent -->
+  <rect class="node neutral-fill" x="375" y="225" width="230" height="140"/>
+  <text x="490" y="253" text-anchor="middle" class="label">⚖️ MiddleAgent 仲裁</text>
+  <text x="490" y="275" text-anchor="middle" class="small">① 预审总结</text>
+  <text x="490" y="293" text-anchor="middle" class="small">② 连锁影响预判</text>
+  <text x="490" y="311" text-anchor="middle" class="small">③ 复核验收结论</text>
+  <text x="490" y="329" text-anchor="middle" class="small">④ 版本 &amp; 状态管理</text>
+  <text x="490" y="347" text-anchor="middle" class="small">⑤ 每5节快照写入</text>
+
+  <!-- AcceptAgent -->
+  <rect class="node input-fill" x="690" y="240" width="230" height="110"/>
+  <text x="805" y="268" text-anchor="middle" class="label">✅ AcceptAgent 验收</text>
+  <text x="805" y="290" text-anchor="middle" class="small">FIFO 队列（上限 5）</text>
+  <text x="805" y="308" text-anchor="middle" class="small">自推理验证</text>
+  <text x="805" y="326" text-anchor="middle" class="small">版本淘汰机制</text>
+
+  <!-- 箭头 WorkAgent → MiddleAgent -->
+  <path class="edge" marker-end="url(#arrow)" d="M290,280 L365,280"/>
+  <text x="327" y="273" text-anchor="middle" class="msg-label">产出通知</text>
+
+  <!-- 箭头 MiddleAgent → AcceptAgent -->
+  <path class="edge" marker-end="url(#arrow)" d="M605,270 L680,270"/>
+  <text x="642" y="263" text-anchor="middle" class="msg-label">预审后产出</text>
+
+  <!-- 箭头 AcceptAgent → MiddleAgent (返回结论) -->
+  <path class="edge" marker-end="url(#arrow)" d="M680,305 L605,305"/>
+  <text x="642" y="318" text-anchor="middle" class="msg-label">验收结论</text>
+
+  <!-- 箭头 MiddleAgent → WorkAgent (返回结论) -->
+  <path class="edge" marker-end="url(#arrow)" d="M365,310 L290,310"/>
+  <text x="327" y="325" text-anchor="middle" class="msg-label">复核后结论</text>
+
+  <!-- MiddleAgent 影响预判 → WorkAgent (虚线) -->
+  <path class="edge-dashed" marker-end="url(#arrow-dashed)" d="M490,390 L490,410 L175,410 L175,355"/>
+  <text x="332" y="422" text-anchor="middle" class="msg-label">影响预判（虚线）</text>
+
+  <!-- MiddleAgent 影响预判 → AcceptAgent (虚线) -->
+  <path class="edge-dashed" marker-end="url(#arrow-dashed)" d="M605,380 L805,380 L805,355"/>
+  <text x="705" y="395" text-anchor="middle" class="msg-label">影响预判（虚线）</text>
+
+  <!-- plan.md 读入 WorkAgent -->
+  <path class="edge" marker-end="url(#arrow)" d="M725,150 L725,175 L175,175 L175,230"/>
+
+  <!-- ============ ZONE 3: 持久化层 ============ -->
+  <rect class="zone zone-fill" x="30" y="530" width="920" height="140"/>
+  <rect class="zone" x="30" y="530" width="920" height="140"/>
+  <text x="45" y="558" class="zone-label">Phase 3 持久化层</text>
+
+  <!-- main/ -->
+  <rect class="node storage-fill" x="80" y="585" width="200" height="50"/>
+  <text x="180" y="615" text-anchor="middle" class="label">📁 main/ 主干目录</text>
+
+  <!-- branches/ -->
+  <rect class="node external-fill" x="390" y="585" width="200" height="50"/>
+  <text x="490" y="615" text-anchor="middle" class="label">📁 branches/ 分支目录</text>
+
+  <!-- snapshots/ -->
+  <rect class="node neutral-fill" x="700" y="585" width="200" height="50"/>
+  <text x="800" y="615" text-anchor="middle" class="label">📸 snapshots/ 快照记录</text>
+
+  <!-- WorkAgent → main/ -->
+  <path class="edge" marker-end="url(#arrow)" d="M175,350 L175,575"/>
+  <text x="165" y="460" class="msg-label" transform="rotate(-90,165,460)">写入产出</text>
+
+  <!-- WorkAgent → branches/ -->
+  <path class="edge" marker-end="url(#arrow)" d="M260,320 L380,320 L380,550 L490,550 L490,575"/>
+  <text x="420" y="435" class="msg-label" transform="rotate(-90,420,435)">创建分支</text>
+
+  <!-- MiddleAgent → snapshots/ -->
+  <path class="edge" marker-end="url(#arrow)" d="M605,340 L690,340 L690,550 L800,550 L800,575"/>
+  <text x="740" y="445" class="msg-label" transform="rotate(-90,740,445)">每5节快照</text>
+
+  <!-- 图例 -->
+  <rect class="node input-fill" x="80" y="655" width="16" height="16"/>
+  <text x="102" y="668" class="small">规划/验收</text>
+
+  <rect class="node process-fill" x="190" y="655" width="16" height="16"/>
+  <text x="212" y="668" class="small">执行/生产</text>
+
+  <rect class="node neutral-fill" x="300" y="655" width="16" height="16"/>
+  <text x="322" y="668" class="small">仲裁/存储</text>
+
+  <rect class="node external-fill" x="410" y="655" width="16" height="16"/>
+  <text x="432" y="668" class="small">分支/用户</text>
+
+  <path class="edge-dashed" d="M520,662 L550,662"/>
+  <text x="558" y="668" class="small">预判消息</text>
+</svg>
+</main>
+</html>

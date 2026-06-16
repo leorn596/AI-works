@@ -1,0 +1,16 @@
+# 临时文件
+temp/
+temp.tar.gz
+*.png
+*.jpg
+
+# 系统/网络配置快照
+ifcfg-ens33.txt
+
+# QQBOT 全局 skill 软链接（系统级，不提交）
+skills/qqbot-channel
+skills/qqbot-media
+skills/qqbot-remind
+
+# 缓存 / 状态
+.openclaw/

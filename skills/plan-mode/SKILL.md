@@ -1,65 +1,53 @@
 ---
 name: plan-mode
-description: "Guided plan-first task breakdown: present 2–4 options with pros/cons, D:Other fallback, chapter-per-section execution with permission gates."
+description: "选项拆分 + 章节级规划。agent 只负责列举方案和分解计划，不做执行。"
 metadata: { "openclaw": { "emoji": "📋" } }
 ---
 
 # Plan Mode
 
-Activated **only** when user explicitly says "enable plan mode", "plan mode", or equivalent. Provides a structured approach to break down ambiguous or multi-step tasks before executing.
+激活条件：用户明确说 "plan mode" / "启用计划模式" / "列计划" 或等效表达。
 
-## Activation
+计划模式下，agent **只做规划和呈现，不执行任何操作**。
 
-Plan Mode is activated only when the user explicitly says something like: "Enable plan mode", "Plan mode", "Let's go into plan mode", or similar clear declaration.
+## 激活
 
-## Mode Behavior
+仅当用户主动触发时才进入计划模式。不要自行猜测用户是否想要 plan mode。
 
-Once activated, follow these rules:
+## 行为规则
 
-### Option generation
+### 选项生成
 
-1. Generate a list of **2–4 possible approaches** to achieve the user's goal.
-   - For each option, state:
-     - ✅ Advantages (pros)
-     - ❌ Disadvantages (cons)
-   - **Every list MUST include option D: "Other"** (a custom option where the user can request a fresh set of alternatives).
+1. 列出 **2-3 个可行方案**（A / B / C），每个方案说明：
+   - ✅ 优点
+   - ❌ 缺点
+   - 无 D:Other 选项
 
-2. **Ask the user to choose** (A, B, C, D).
-   - If A, B, or C → that becomes the chosen plan.
-   - If **D: Other** → generate a **new list** (2–4 options, pros/cons, including D: Other again). New list must **not repeat** any previously shown option.
+2. **请用户选择**（A、B 或 C）。
+   - 选中的方案即作为本次计划的基础。
 
-3. If selection is NOT in {A, B, C, D}, reply:
-   > "请从以上选项中选择，或选择'D:其他'来获取更多类型。"
-   (English: "Please select from the options above, or choose 'D: Other' for more alternatives.")
+3. 如果用户输入不在 {A, B, C} 范围内，回复：
+   > "请从以上 A/B/C 中选择一个方案。"
 
-### D: Other repetition limit
+### 计划分解
 
-- Maintain counter `other_choice_count`, start at 0.
-- Each time user selects D: Other:
-  - If `other_choice_count < 3`: increment, generate fresh list (no repeats).
-  - If `other_choice_count >= 3`: do **not** generate new list. Ask exactly:
-    > "请用一句话描述您要完成的目标，我将直接给出对应方案。"
-    After user replies with one sentence, provide a **direct, concrete plan** (no A/B/C/D). Then proceed after user permission.
-- Reset `other_choice_count` to 0 when Plan Mode ends or user says "reset plan mode".
+1. 将选定的方案拆分为**章节和子节**（例如："第1章：数据收集"、"1.1 列出源文件"、"1.2 检查权限"）。
 
-### Plan structuring
+2. **逐章呈现**：一次列出一个章节的完整结构，包括：
+   - 章目标题
+   - 各子节内容简述
+   - 停顿，等用户确认或提修改意见
 
-- Break chosen plan into **chapters and subsections** (e.g., "Chapter 1: Gather data", "1.1 List files", "1.2 Check permissions").
-- After completing **each chapter**:
-  - State: "接下来需要完成的章节："
-  - State: "下一章节："
-  - List subsections: "下一章节包含的小节："
-  - Then ask for permission to continue (or auto-continue if no objection).
+3. 用户确认当前章节后，再列出下一章。以此类推，直到全计划呈现完毕。
 
-### Final execution permission
+### 计划交付
 
-- **Only after the entire plan is fully mapped out** (all chapters/subsections defined) **and the user gives explicit permission** (e.g., "Execute", "Go ahead", "Start") may execution begin.
-- If permission not given, wait and do not take action.
+- 所有章节呈现并确认完毕后，整理一份**完整计划摘要**给用户。
+- 计划模式到此结束。
+- **不执行任何实际操作。** 用户保有计划后可按需自行落地。
 
-### Plan termination
+### 计划模式结束
 
-Plan Mode ends **only when**:
-- The task goal is achieved, **or**
-- The user explicitly says "Exit plan mode" or "Stop planning".
-
-After the goal is reached, summarize the outcome and optionally ask if any follow-up is needed.
+- 用户说 "exit plan mode" / "退出计划模式" / 或换话题 → 自动退出
+- 计划已完整交付给用户 → 自动退出
+- 用户主动中断 → 尊重用户意图，直接退出
