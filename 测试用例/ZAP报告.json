@@ -1,0 +1,206 @@
+{
+  "@version": "2.15.0",
+  "@generated": "2026-06-30T10:00:00Z",
+  "site": [
+    {
+      "@name": "https://vuln-platform.example.com",
+      "@host": "vuln-platform.example.com",
+      "@port": "443",
+      "@ssl": "true",
+      "alerts": [
+        {
+          "pluginid": "40012",
+          "alertRef": "40012",
+          "alert": "Cross Site Scripting (Reflected)",
+          "name": "Cross Site Scripting (Reflected)",
+          "riskcode": "3",
+          "confidence": "2",
+          "riskdesc": "High (Medium)",
+          "desc": "Reflected XSS found in search parameter.",
+          "instances": [
+            {
+              "uri": "https://vuln-platform.example.com/search",
+              "method": "GET",
+              "param": "q",
+              "attack": "<script>alert(1)</script>",
+              "evidence": "<script>alert(1)</script>"
+            }
+          ],
+          "count": "1",
+          "solution": "HTML-encode all user-supplied data before rendering.",
+          "cweid": "79",
+          "wascid": "8",
+          "sourceid": "1"
+        },
+        {
+          "pluginid": "40018",
+          "alertRef": "40018",
+          "alert": "SQL Injection",
+          "name": "SQL Injection",
+          "riskcode": "3",
+          "confidence": "2",
+          "riskdesc": "High (Medium)",
+          "desc": "SQL injection found via error-based technique in login parameter.",
+          "instances": [
+            {
+              "uri": "https://vuln-platform.example.com/login",
+              "method": "POST",
+              "param": "username",
+              "attack": "' OR '1'='1",
+              "evidence": "You have an error in your SQL syntax"
+            }
+          ],
+          "count": "1",
+          "solution": "Use parameterized queries or prepared statements.",
+          "cweid": "89",
+          "wascid": "19",
+          "sourceid": "1"
+        },
+        {
+          "pluginid": "40029",
+          "alertRef": "40029",
+          "alert": "Cross Site Request Forgery",
+          "name": "Cross Site Request Forgery",
+          "riskcode": "2",
+          "confidence": "2",
+          "riskdesc": "Medium (Medium)",
+          "desc": "No CSRF token found in password change form.",
+          "instances": [
+            {
+              "uri": "https://vuln-platform.example.com/account/password",
+              "method": "POST",
+              "param": "",
+              "attack": "",
+              "evidence": "No anti-CSRF tokens found"
+            }
+          ],
+          "count": "1",
+          "solution": "Add CSRF token to all state-changing requests.",
+          "cweid": "352",
+          "wascid": "9",
+          "sourceid": "1"
+        },
+        {
+          "pluginid": "40009",
+          "alertRef": "40009",
+          "alert": "Server-Side Request Forgery",
+          "name": "Server-Side Request Forgery",
+          "riskcode": "2",
+          "confidence": "2",
+          "riskdesc": "Medium (Medium)",
+          "desc": "SSRF via image fetch proxy, can access internal network.",
+          "instances": [
+            {
+              "uri": "https://vuln-platform.example.com/fetch-image",
+              "method": "POST",
+              "param": "url",
+              "attack": "http://169.254.169.254/latest/meta-data/",
+              "evidence": "AWS metadata returned"
+            }
+          ],
+          "count": "1",
+          "solution": "Whitelist allowed URL schemes and hosts.",
+          "cweid": "918",
+          "wascid": "20",
+          "sourceid": "1"
+        },
+        {
+          "pluginid": "10096",
+          "alertRef": "10096",
+          "alert": "Information Disclosure - Sensitive Data in URL",
+          "name": "Information Disclosure",
+          "riskcode": "1",
+          "confidence": "3",
+          "riskdesc": "Low (High)",
+          "desc": "Session token exposed in URL query string.",
+          "instances": [
+            {
+              "uri": "https://vuln-platform.example.com/dashboard?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9",
+              "method": "GET",
+              "param": "token",
+              "attack": "",
+              "evidence": "JWT token in URL"
+            }
+          ],
+          "count": "2",
+          "solution": "Use POST method or secure cookies for sensitive data.",
+          "cweid": "598",
+          "wascid": "13",
+          "sourceid": "1"
+        },
+        {
+          "pluginid": "40003",
+          "alertRef": "40003",
+          "alert": "File Inclusion",
+          "name": "Local File Inclusion",
+          "riskcode": "3",
+          "confidence": "2",
+          "riskdesc": "High (Medium)",
+          "desc": "LFI via page parameter allows reading system files.",
+          "instances": [
+            {
+              "uri": "https://vuln-platform.example.com/help?page=about",
+              "method": "GET",
+              "param": "page",
+              "attack": "../../../../etc/passwd",
+              "evidence": "root:x:0:0:root:/root:/bin/bash"
+            }
+          ],
+          "count": "1",
+          "solution": "Whitelist allowed file paths and sanitize input.",
+          "cweid": "98",
+          "wascid": "33",
+          "sourceid": "1"
+        },
+        {
+          "pluginid": "10049",
+          "alertRef": "10049",
+          "alert": "Insecure HTTP Methods",
+          "name": "Insecure HTTP Methods (PUT enabled)",
+          "riskcode": "2",
+          "confidence": "3",
+          "riskdesc": "Medium (High)",
+          "desc": "HTTP PUT method is enabled on the web server.",
+          "instances": [
+            {
+              "uri": "https://vuln-platform.example.com/",
+              "method": "OPTIONS",
+              "param": "",
+              "attack": "",
+              "evidence": "PUT, DELETE methods allowed"
+            }
+          ],
+          "count": "1",
+          "solution": "Disable unnecessary HTTP methods (PUT, DELETE, TRACE).",
+          "cweid": "650",
+          "wascid": "45",
+          "sourceid": "1"
+        },
+        {
+          "pluginid": "10015",
+          "alertRef": "10015",
+          "alert": "Absence of Anti-CSRF Tokens",
+          "name": "Missing Anti-CSRF Tokens",
+          "riskcode": "1",
+          "confidence": "2",
+          "riskdesc": "Low (Medium)",
+          "desc": "No anti-CSRF tokens were found in any HTML form.",
+          "instances": [
+            {
+              "uri": "https://vuln-platform.example.com/checkout",
+              "method": "POST",
+              "param": "",
+              "attack": "",
+              "evidence": ""
+            }
+          ],
+          "count": "3",
+          "solution": "Add CSRF tokens to all forms.",
+          "cweid": "352",
+          "wascid": "9",
+          "sourceid": "3"
+        }
+      ]
+    }
+  ]
+}

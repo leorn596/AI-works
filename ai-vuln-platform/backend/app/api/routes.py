@@ -13,13 +13,14 @@ from app.api.schemas import (
     ManualAnalysisRequest,
     BatchAnalysisRequest,
     MultiSourceAnalysisRequest,
+    URLAnalysisRequest,
     APIResponse,
 )
 from app.core.database import get_db
 from fastapi.responses import StreamingResponse
 from app.core.redis import cache_analysis_result, get_cached_analysis, invalidate_analysis_cache
 from app.models.models import AnalysisTask, Vulnerability, RemediationChecklist
-from app.services.ai_service import analyze_vulnerability, analyze_vulnerability_batch
+from app.services.ai_service import analyze_vulnerability, analyze_vulnerability_batch, analyze_url
 from app.services.multi_source_service import analyze_multi_source
 
 logger = logging.getLogger(__name__)
@@ -120,6 +121,31 @@ async def analyze_manual(req: ManualAnalysisRequest, db: AsyncSession = Depends(
         raise HTTPException(status_code=503, detail="AI 服务暂时不可用，请稍后重试")
     except Exception as e:
         logger.exception("Analysis failed: %s", e)
+        raise HTTPException(status_code=500, detail="服务器内部错误")
+
+
+@router.post("/analyze/url", response_model=APIResponse, summary="URL 漏洞分析", description="接受目标 URL，使用 AI 推理分析可能存在的安全漏洞。无需实际扫描，基于 URL 结构和安全知识推理。结果保存到 MySQL 并缓存到 Redis。")
+async def analyze_url_endpoint(req: URLAnalysisRequest, db: AsyncSession = Depends(get_db)):
+    """URL 漏洞分析端点。"""
+    try:
+        result = await analyze_url(url=req.url)
+        # Save to MySQL
+        task_id = await _save_analysis_result(
+            db=db,
+            input_type="url",
+            input_content=req.url,
+            model_used=None,
+            result=result,
+        )
+        # Cache in Redis
+        await cache_analysis_result(task_id, result)
+        result["task_id"] = task_id
+        return APIResponse(code=200, message="URL 分析完成", data=result)
+    except RuntimeError as e:
+        logger.error("AI service error in URL analysis: %s", e)
+        raise HTTPException(status_code=503, detail="AI 服务暂时不可用，请稍后重试")
+    except Exception as e:
+        logger.exception("URL analysis failed: %s", e)
         raise HTTPException(status_code=500, detail="服务器内部错误")
 
 

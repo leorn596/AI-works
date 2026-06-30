@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button, Input, Tabs, Upload, Form, notification } from 'antd'
 import { UploadOutlined, FileTextOutlined, LinkOutlined, InboxOutlined, SwapOutlined } from '@ant-design/icons'
-import { analyzeManual, analyzeBatch, setManualVulnerabilities } from '../store/analysisSlice'
+import { analyzeManual, analyzeBatch, analyzeUrl, setManualVulnerabilities } from '../store/analysisSlice'
 import { parseFile } from '../utils/fileParser'
 import CrossValidation from './CrossValidation'
 
@@ -42,6 +42,8 @@ const InputSection = () => {
   const [activeTab, setActiveTab] = useState('manual')
   const [parsedFile, setParsedFile] = useState(null) // { format, count }
   const [fileVulns, setFileVulns] = useState(null)
+  const [urlValue, setUrlValue] = useState('')
+  const [urlError, setUrlError] = useState('')
 
   const handleSubmit = async () => {
     try {
@@ -58,6 +60,29 @@ const InputSection = () => {
   }
 
   // Handle file read and parse (with size check + async parsing)
+  const handleUrlSubmit = () => {
+    const url = urlValue.trim()
+    if (!url) {
+      setUrlError('请输入目标 URL')
+      return
+    }
+    if (!url.startsWith('http://') && !url.startsWith('https://')) {
+      setUrlError('URL 必须以 http:// 或 https:// 开头')
+      return
+    }
+    if (url.length < 10) {
+      setUrlError('URL 长度至少 10 个字符')
+      return
+    }
+    setUrlError('')
+    dispatch(analyzeUrl({ url }))
+    notification.success({
+      message: 'URL 分析已提交',
+      description: 'AI 正在分析目标 URL 的安全风险，请稍候...',
+      placement: 'topRight',
+    })
+  }
+
   const handleFileUpload = (file) => {
     // ── File size check ──
     const MAX_SIZE = 10 * 1024 * 1024  // 10MB
@@ -157,16 +182,17 @@ const InputSection = () => {
             <Input
               placeholder="https://example.com/api/endpoint"
               prefix={<LinkOutlined className="text-gray-400" />}
-              disabled
               size="large"
+              value={urlValue}
+              onChange={(e) => { setUrlValue(e.target.value); setUrlError('') }}
+              status={urlError ? 'error' : ''}
+              disabled={isAnalyzing}
             />
+            {urlError && <p className="text-red-500 text-xs mt-1">{urlError}</p>}
           </div>
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded">
-            <p className="text-blue-700 text-sm">
-              🚀 URL 扫描功能即将上线，敬请期待！
-            </p>
-            <p className="text-blue-500 text-xs mt-1">
-              将支持自动爬取、主动扫描、API 端点探测等功能
+          <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded">
+            <p className="text-amber-700 text-sm">
+              🔍 AI 将基于 URL 结构和安全知识推理可能的漏洞风险，无需实际扫描
             </p>
           </div>
         </div>
@@ -246,6 +272,19 @@ const InputSection = () => {
         onChange={setActiveTab}
         items={tabItems}
       />
+      {activeTab === 'url' && (
+        <Button
+          type="primary"
+          size="large"
+          block
+          loading={isAnalyzing}
+          disabled={isAnalyzing}
+          onClick={handleUrlSubmit}
+          className="mt-2"
+        >
+          {isAnalyzing ? 'AI 分析中...' : '开始 URL 分析'}
+        </Button>
+      )}
       {activeTab === 'manual' && (
         <Button
           type="primary"

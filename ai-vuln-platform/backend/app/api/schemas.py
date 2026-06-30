@@ -1,5 +1,5 @@
 """Pydantic schemas for API request/response."""
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import Optional
 
 
@@ -7,6 +7,19 @@ class ManualAnalysisRequest(BaseModel):
     """Request body for manual vulnerability analysis."""
     description: str = Field(..., min_length=10, max_length=10000, description="漏洞描述")
     model: Optional[str] = Field(None, description="AI model override")
+
+
+class URLAnalysisRequest(BaseModel):
+    """Request body for URL vulnerability analysis."""
+    url: str = Field(..., min_length=10, max_length=2048, description="目标 URL (http/https)")
+
+    @field_validator('url')
+    @classmethod
+    def validate_url_scheme(cls, v: str) -> str:
+        v = v.strip()
+        if not v.startswith(('http://', 'https://')):
+            raise ValueError('URL 必须以 http:// 或 https:// 开头')
+        return v
 
 
 class SourceVulnInput(BaseModel):

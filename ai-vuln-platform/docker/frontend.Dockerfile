@@ -11,7 +11,7 @@ WORKDIR /app
 
 # 依赖安装（利用 Docker 缓存层）
 COPY frontend/package.json frontend/package-lock.json* ./
-RUN npm ci --only=production --ignore-scripts 2>/dev/null || npm install
+RUN npm ci
 
 # 复制源码并构建
 COPY frontend/ .

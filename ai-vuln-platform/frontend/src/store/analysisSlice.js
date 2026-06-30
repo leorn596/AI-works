@@ -45,6 +45,28 @@ export const analyzeBatch = createAsyncThunk(
   }
 )
 
+// T9.1: Async thunk for URL vulnerability analysis
+export const analyzeUrl = createAsyncThunk(
+  'analysis/analyzeUrl',
+  async ({ url }, { rejectWithValue }) => {
+    try {
+      const data = await apiClient('/api/analyze/url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+        timeout: 60000,
+        maxRetries: 3,
+      })
+      if (data.code !== 200) {
+        return rejectWithValue(data.message || 'URL 分析失败')
+      }
+      return data.data
+    } catch (err) {
+      return rejectWithValue(err.message || '网络错误')
+    }
+  }
+)
+
 // T5.1: Async thunk for multi-source cross-validation analysis
 export const analyzeMultiSource = createAsyncThunk(
   'analysis/analyzeMultiSource',
@@ -187,6 +209,30 @@ const analysisSlice = createSlice({
       .addCase(analyzeMultiSource.rejected, (state, action) => {
         state.status = 'error'
         state.error = action.payload || '多源对比分析失败'
+      })
+      // T9.1: URL analysis
+      .addCase(analyzeUrl.pending, (state) => {
+        state.status = 'loading'
+        state.error = null
+        state.vulnerabilities = []
+        state.currentVulnerability = null
+        state.batchProgress = null
+        state.checklist = []
+      })
+      .addCase(analyzeUrl.fulfilled, (state, action) => {
+        state.status = 'success'
+        state.vulnerabilities = action.payload.vulnerabilities || []
+        state.summary = action.payload.summary || ''
+        state.cvssOverall = action.payload.cvss_overall || null
+        state.checklist = action.payload.checklist || []
+        state.taskId = action.payload.task_id || null
+        if (state.vulnerabilities.length > 0) {
+          state.currentVulnerability = state.vulnerabilities[0]
+        }
+      })
+      .addCase(analyzeUrl.rejected, (state, action) => {
+        state.status = 'error'
+        state.error = action.payload || 'URL 分析失败'
       })
   },
 })
