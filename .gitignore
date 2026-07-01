@@ -1,0 +1,28 @@
+# AI 漏洞分析平台 — .gitignore
+
+# 环境变量（含密钥）
+docker/.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Node
+node_modules/
+frontend/dist/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docker
+docker/mysql-data/
