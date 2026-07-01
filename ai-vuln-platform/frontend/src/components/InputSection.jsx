@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Button, Input, Tabs, Upload, Form, notification } from 'antd'
 import { UploadOutlined, FileTextOutlined, LinkOutlined, InboxOutlined, SwapOutlined } from '@ant-design/icons'
@@ -44,6 +44,19 @@ const InputSection = () => {
   const [fileVulns, setFileVulns] = useState(null)
   const [urlValue, setUrlValue] = useState('')
   const [urlError, setUrlError] = useState('')
+
+  // T9.5: Listen for analysis error and show friendly notification
+  const { error: analysisError, status: analysisStatus } = useSelector((state) => state.analysis)
+  useEffect(() => {
+    if (analysisStatus === 'error' && analysisError) {
+      notification.error({
+        message: '分析失败',
+        description: analysisError,
+        placement: 'topRight',
+        duration: 6,
+      })
+    }
+  }, [analysisStatus, analysisError])
 
   const handleSubmit = async () => {
     try {

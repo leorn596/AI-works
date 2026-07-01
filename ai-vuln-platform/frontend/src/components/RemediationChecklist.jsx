@@ -43,7 +43,18 @@ const PRIORITY_COLOR = (p) => {
 
 // Parse structured checklist item text: [P{n}][{category}] {title}: {detail}
 function parseChecklistItem(item) {
-  const text = item.item_text || item
+  // Structured object with category field (from backend API)
+  if (item && typeof item === 'object' && 'category' in item) {
+    return {
+      priority: parseInt(item.priority, 10) || 3,
+      category: item.category || '配置',
+      title: item.title || '',
+      detail: item.detail || '',
+    }
+  }
+
+  // Legacy string format: extract item_text
+  const text = item.item_text || (typeof item === 'string' ? item : '')
   if (typeof text !== 'string') return { priority: 3, category: '配置', title: '', detail: '' }
 
   const match = text.match(/^\[P(\d)\]\[([^\]]+)\]\s*(.+?)(?::\s*(.*))?$/)

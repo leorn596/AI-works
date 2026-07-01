@@ -11,6 +11,7 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     default-libmysqlclient-dev \
+    fonts-wqy-zenhei \
     && rm -rf /var/lib/apt/lists/*
 
 # Python 依赖安装（利用 Docker 缓存层）

@@ -93,6 +93,7 @@ async def analyze_vulnerability(description: str, model: str | None = None) -> d
     client = AsyncOpenAI(
         api_key=settings.OPENAI_API_KEY,
         base_url=settings.OPENAI_BASE_URL,
+        max_retries=2,
     )
 
     use_model = model or settings.OPENAI_MODEL
@@ -109,12 +110,17 @@ async def analyze_vulnerability(description: str, model: str | None = None) -> d
             ],
             temperature=0.3,
             max_tokens=4096,
-            timeout=30,
+            timeout=90,
         )
     except Exception as e:
         err_str = str(e).lower()
+        status_code = getattr(e, 'status_code', None)
         if "timeout" in err_str or "timed out" in err_str:
-            raise RuntimeError("AI 服务响应超时（30s），请稍后重试") from e
+            raise RuntimeError("AI 服务响应超时（90s），请检查模型响应速度或稍后重试") from e
+        if status_code in (401, 403) or "authentication" in err_str or "api key" in err_str or "unauthorized" in err_str:
+            raise RuntimeError("AI API 认证失败，请检查 API Key") from e
+        if status_code == 404 or "not found" in err_str:
+            raise RuntimeError("AI 模型不存在，请检查模型配置") from e
         raise RuntimeError(f"AI 服务调用失败: {str(e)}") from e
 
     raw_content = response.choices[0].message.content.strip()
@@ -160,6 +166,7 @@ async def analyze_url(url: str, model: str | None = None) -> dict:
     client = AsyncOpenAI(
         api_key=settings.OPENAI_API_KEY,
         base_url=settings.OPENAI_BASE_URL,
+        max_retries=2,
     )
 
     use_model = model or settings.OPENAI_MODEL
@@ -176,12 +183,17 @@ async def analyze_url(url: str, model: str | None = None) -> dict:
             ],
             temperature=0.3,
             max_tokens=4096,
-            timeout=30,
+            timeout=90,
         )
     except Exception as e:
         err_str = str(e).lower()
+        status_code = getattr(e, 'status_code', None)
         if "timeout" in err_str or "timed out" in err_str:
-            raise RuntimeError("AI 服务响应超时（30s），请稍后重试") from e
+            raise RuntimeError("AI 服务响应超时（90s），请检查模型响应速度或稍后重试") from e
+        if status_code in (401, 403) or "authentication" in err_str or "api key" in err_str or "unauthorized" in err_str:
+            raise RuntimeError("AI API 认证失败，请检查 API Key") from e
+        if status_code == 404 or "not found" in err_str:
+            raise RuntimeError("AI 模型不存在，请检查模型配置") from e
         raise RuntimeError(f"AI 服务调用失败: {str(e)}") from e
 
     raw_content = response.choices[0].message.content.strip()
@@ -227,6 +239,7 @@ async def analyze_vulnerability_batch(vulnerabilities: list[dict], model: str | 
     client = AsyncOpenAI(
         api_key=settings.OPENAI_API_KEY,
         base_url=settings.OPENAI_BASE_URL,
+        max_retries=2,
     )
 
     use_model = model or settings.OPENAI_MODEL
@@ -254,12 +267,17 @@ async def analyze_vulnerability_batch(vulnerabilities: list[dict], model: str | 
                 ],
                 temperature=0.3,
                 max_tokens=4096,
-                timeout=60,
+                timeout=120,
             )
         except Exception as e:
             err_str = str(e).lower()
+            status_code = getattr(e, 'status_code', None)
             if "timeout" in err_str or "timed out" in err_str:
-                raise RuntimeError("AI 批量分析响应超时，请稍后重试或减少漏洞数量") from e
+                raise RuntimeError("AI 批量分析响应超时（120s），请稍后重试或减少漏洞数量") from e
+            if status_code in (401, 403) or "authentication" in err_str or "api key" in err_str or "unauthorized" in err_str:
+                raise RuntimeError("AI API 认证失败，请检查 API Key") from e
+            if status_code == 404 or "not found" in err_str:
+                raise RuntimeError("AI 模型不存在，请检查模型配置") from e
             raise RuntimeError(f"AI 批量分析调用失败: {str(e)}") from e
 
         raw_content = response.choices[0].message.content.strip()
@@ -337,21 +355,28 @@ def _parse_ai_response(raw_content: str) -> dict:
 
     # Normalize: ensure it's a dict with expected keys
     if isinstance(result, list):
-        vulns = result
+        vulns = [v for v in result if v and isinstance(v, dict)]
         summary = ""
         cvss_max = max((v.get("cvss_score", 0) for v in vulns), default=0)
         checklist = []
     else:
         vulns = result.get("vulnerabilities", result.get("vulns", [result]))
+        if not isinstance(vulns, list):
+            vulns = []
+        vulns = [v for v in vulns if v and isinstance(v, dict)]
         summary = result.get("summary", "")
         cvss_max = result.get("cvss_overall", 0)
         checklist = result.get("checklist", [])
+        if not isinstance(checklist, list):
+            checklist = []
         if not cvss_max and vulns:
             cvss_max = max((v.get("cvss_score", 0) for v in vulns), default=0)
 
     # Ensure each vuln has required fields
     normalized = []
     for v in vulns:
+        if not v or not isinstance(v, dict):
+            continue
         normalized.append(
             {
                 "vuln_name": v.get("vuln_name", "未知漏洞"),
@@ -374,6 +399,13 @@ def _parse_ai_response(raw_content: str) -> dict:
                 "category": item.get("category", "配置"),
                 "title": item.get("title", ""),
                 "detail": item.get("detail", ""),
+            })
+        elif isinstance(item, str) and item.strip():
+            normalized_checklist.append({
+                "priority": 3,
+                "category": "配置",
+                "title": item[:60],
+                "detail": item,
             })
 
     return {

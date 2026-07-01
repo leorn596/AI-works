@@ -221,7 +221,9 @@ const analysisSlice = createSlice({
       })
       .addCase(analyzeUrl.fulfilled, (state, action) => {
         state.status = 'success'
-        state.vulnerabilities = action.payload.vulnerabilities || []
+        // T9.6: Filter out null/undefined elements from vulnerabilities array
+        const raw = action.payload.vulnerabilities || []
+        state.vulnerabilities = Array.isArray(raw) ? raw.filter(Boolean) : []
         state.summary = action.payload.summary || ''
         state.cvssOverall = action.payload.cvss_overall || null
         state.checklist = action.payload.checklist || []
@@ -233,6 +235,8 @@ const analysisSlice = createSlice({
       .addCase(analyzeUrl.rejected, (state, action) => {
         state.status = 'error'
         state.error = action.payload || 'URL 分析失败'
+        state.vulnerabilities = []
+        state.currentVulnerability = null
       })
   },
 })
