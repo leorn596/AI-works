@@ -246,16 +246,16 @@ workspace/
 
 | 角色 | 模型 | API | 端点 |
 |------|------|-----|------|
-| **PlanMode**（执行模型） | `deepseek-v4-pro` | 默认 API | 默认 |
-| **WorkAgent** | `gemini-3.1-flash-lite` | `$IMAGE_GEN_API_KEY` | `https://grsai.dakka.com.cn/v1/chat/completions` |
-| **MiddleAgent** | `gpt-5.4` | `$IMAGE_GEN_API_KEY` | `https://grsai.dakka.com.cn/v1/chat/completions` |
-| **AcceptAgent** | `deepseek-v4-pro` | 默认 API | 默认 |
+| **WorkAgent** | `mimo-v2.5` | 默认 API | 默认 |
+| **MiddleAgent** | `mimo-v2.5-pro` | 默认 API | 默认 |
+| **AcceptAgent** | `deepseek-v4-flash` | 默认 API | 默认 |
 
 ### 配置说明
 
-- WorkAgent 和 MiddleAgent 共用 IMAGE_GEN_API_KEY（环境变量），走第三方 API 端点
-- PlanMode 和 AcceptAgent 走默认 Gateway 模型配置
-- `IMAGE_GEN_API_KEY` 已在系统中配置，无需手动设置
+- 三个角色均走默认 Gateway 模型配置
+- WorkAgent 用 mimo-v2.5 做主产线，平衡速度和质量
+- MiddleAgent 用 mimo-v2.5-pro 做预审和仲裁，推理能力更强
+- AcceptAgent 用 deepseek-v4-flash 做快速验收，响应快
 
 ## 与 Plan Mode 衔接
 
